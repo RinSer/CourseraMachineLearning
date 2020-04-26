@@ -63,33 +63,29 @@ Theta2_grad = zeros(size(Theta2));
 %
 
 % Create comparison data vectors
-Y = zeros(m, num_labels);
-for i=1:m
-  Y(i, y(i)) = 1;
-end
+Y = full(sparse(1:m, y, 1, m, num_labels));
+
 % Forward propagation
 XI = [ones(m, 1), X];  % add bias
 H2 = [ones(m, 1), sigmoid(XI*Theta1')];  % Count the hidden layer outputs and add bias
 H = sigmoid(H2*Theta2'); % Count the prediction for each input as a 10D vector
+
 % Count the cost function
 J = -1/m*sum(sum(Y.*log(H)+(1-Y).*log(1-H))) + lambda/(2*m)*(sum(sum(Theta1(:,2:end).^2))+sum(sum(Theta2(:,2:end).^2)));
 
 % Backpropagation algorithm
-for t=1:m
-  % Step 1
-  a1 = [1, X(t,:)]';
-  z2 = Theta1*a1;
-  a2 = [1; sigmoid(z2)];
-  z3 = Theta2*a2;
-  a3 = sigmoid(z3);
-  % Step 2
-  d3 = a3 - Y(t,:)';
-  % Step 3
-  d2 = (Theta2'*d3)(2:end).*sigmoidGradient(z2);
-  % Step 4 and 5
-  Theta1_grad = Theta1_grad + 1/m*d2*a1';
-  Theta2_grad = Theta2_grad + 1/m*d3*a2';
-end
+% Step 1: Forward propagation
+Z2 = Theta1*XI';
+A2 = [ones(m, 1), sigmoid(Z2)'];
+Z3 = Theta2*A2';
+A3 = sigmoid(Z3);
+% Step 2: Third layer deltas
+D3 = A3 - Y';
+% Step 3: Second layer deltas
+D2 = (Theta2(:,2:end)'*D3).*sigmoidGradient(Z2);
+% Step 4 and 5: Count parameters' gradients
+Theta1_grad = 1/m*(D2*XI);
+Theta2_grad = 1/m*(D3*A2);
 
 % Gradient regularization
 Theta1_grad(:, 2:end) = Theta1_grad(:, 2:end) + lambda/m*Theta1(:, 2:end);
